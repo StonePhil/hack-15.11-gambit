@@ -146,13 +146,6 @@
       animation: fadeInUp 0.5s ease-out forwards;
     }
 
-    
-    }
-
-    .text-preview::-webkit-scrollbar { width: 8px; }
-    .text-preview::-webkit-scrollbar-track { background: #2D2D2D; border-radius: 4px; }
-    .text-preview::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 4px; }
-
     .pdf-preview {
       width: 100%;
       height: 600px;
@@ -162,36 +155,64 @@
       transform: perspective(1000px) rotateX(1deg);
     }
 
+    /* КНОПКИ: СЛЕВА — ОТПРАВИТЬ, СПРАВА — ОЧИСТИТЬ */
     .actions {
       display: flex;
-      justify-content: flex-end;
-      margin-top: 16px;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
       opacity: 0;
       animation: fadeIn 0.5s 0.3s forwards;
     }
 
-    .btn-clear {
+    .btn {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(239,68,68,0.1);
-      color: #EF4444;
-      border: none;
       padding: 10px 16px;
       border-radius: 12px;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
+      border: none;
     }
 
-    .btn-clear:hover {
-      background: rgba(239,68,68,0.2);
+    .btn-send {
+      background: rgba(34, 197, 94, 0.1); /* Зелёный фон */
+      color: #22C55E;
+    }
+
+    .btn-send:hover {
+      background: rgba(34, 197, 94, 0.2);
       transform: translateY(-2px);
     }
 
-    .btn-clear i { transition: transform 0.3s ease; }
-    .btn-clear:hover i { transform: rotate(90deg) scale(1.2); }
+    .btn-send i {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-send:hover i {
+      transform: translateX(4px) scale(1.1);
+    }
+
+    .btn-clear {
+      background: rgba(239, 68, 68, 0.1);
+      color: #EF4444;
+    }
+
+    .btn-clear:hover {
+      background: rgba(239, 68, 68, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-clear i {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-clear:hover i {
+      transform: rotate(90deg) scale(1.2);
+    }
 
     .toast {
       position: fixed;
@@ -221,6 +242,8 @@
       .upload-area { padding: 32px 16px; }
       .pdf-preview { height: 500px; }
       .info-bar { flex-direction: column; text-align: center; gap: 4px; }
+      .actions { flex-direction: column; gap: 12px; }
+      .btn { width: 100%; justify-content: center; }
     }
 
     @keyframes fadeIn { to { opacity: 1; } }
@@ -254,8 +277,18 @@
       <div id="text-preview" class="preview text-preview hidden"></div>
       <iframe id="pdf-preview" class="preview pdf-preview hidden"></iframe>
 
+      <!-- КНОПКИ: СЛЕВА — ОТПРАВИТЬ, СПРАВА — ОЧИСТИТЬ -->
       <div class="actions hidden" id="actions">
-        <button class="btn-clear" id="btn-clear">
+        <button class="btn btn-send" id="btn-send"  >
+            <script>
+  // Add a click event listener to the "Отправить" button to redirect to process.html
+  document.getElementById("btn-send").addEventListener("click", function() {
+    window.location.href = "process.html";
+  });
+</script>
+          <i data-lucide="send"></i> Отправить
+        </button>
+        <button class="btn btn-clear" id="btn-clear">
           <i data-lucide="trash-2"></i> Очистить
         </button>
       </div>
@@ -274,12 +307,14 @@
     const pdfPreview = document.getElementById('pdf-preview');
     const actions = document.getElementById('actions');
     const btnClear = document.getElementById('btn-clear');
+    const btnSend = document.getElementById('btn-send');
     const infoBar = document.getElementById('info-bar');
     const fileNameText = document.getElementById('file-name-text');
     const fileSizeText = document.getElementById('file-size-text');
     const toast = document.getElementById('toast');
 
     let isPdf = false;
+    let currentFile = null;
 
     uploadArea.addEventListener('click', () => fileInput.click());
     browse.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
@@ -290,7 +325,7 @@
 
     uploadArea.addEventListener('dragenter', () => uploadArea.classList.add('dragover'));
     uploadArea.addEventListener('dragover', () => uploadArea.classList.add('dragover'));
-    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadText.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
     uploadArea.addEventListener('drop', e => {
       uploadArea.classList.remove('dragover');
       const file = e.dataTransfer.files[0];
@@ -302,14 +337,30 @@
     });
 
     btnClear.addEventListener('click', resetAll);
+    
+    // Обработчик кнопки "Отправить"
+    btnSend.addEventListener('click', () => {
+      if (!currentFile) {
+        showToast('Сначала загрузите файл');
+        return;
+      }
+
+      // Здесь можно добавить логику отправки файла
+      showToast(`Файл "${currentFile.name}" отправлен!`);
+      
+      // Пример: можно сбросить после отправки
+      // setTimeout(resetAll, 1500);
+    });
 
     function handleFile(file) {
       resetAll();
+      currentFile = file;
       const ext = file.name.toLowerCase().split('.').pop();
       isPdf = ext === 'pdf';
 
       if (!['txt', 'pdf'].includes(ext)) {
         showToast('Поддерживаются только .txt и .pdf');
+        currentFile = null;
         return;
       }
 
@@ -365,6 +416,7 @@
       actions.classList.add('hidden');
       infoBar.classList.remove('visible');
       fileInput.value = '';
+      currentFile = null;
       isPdf = false;
     }
 
