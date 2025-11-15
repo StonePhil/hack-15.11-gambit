@@ -99,7 +99,6 @@
 
     #file-input { display: none; }
 
-    /* ЧЁРНАЯ ПОЛОСА — СКРЫТА ПО УМОЛЧАНИЮ */
     .info-bar {
       background: #000;
       color: white;
@@ -146,6 +145,10 @@
       animation: fadeInUp 0.5s ease-out forwards;
     }
 
+    .text-preview::-webkit-scrollbar { width: 8px; }
+    .text-preview::-webkit-scrollbar-track { background: #2D2D2D; border-radius: 4px; }
+    .text-preview::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 4px; }
+
     .pdf-preview {
       width: 100%;
       height: 600px;
@@ -155,7 +158,6 @@
       transform: perspective(1000px) rotateX(1deg);
     }
 
-    /* КНОПКИ: СЛЕВА — ОТПРАВИТЬ, СПРАВА — ОЧИСТИТЬ */
     .actions {
       display: flex;
       justify-content: space-between;
@@ -179,7 +181,7 @@
     }
 
     .btn-send {
-      background: rgba(34, 197, 94, 0.1); /* Зелёный фон */
+      background: rgba(34, 197, 94, 0.1);
       color: #22C55E;
     }
 
@@ -206,13 +208,8 @@
       transform: translateY(-2px);
     }
 
-    .btn-clear i {
-      transition: transform 0.3s ease;
-    }
-
-    .btn-clear:hover i {
-      transform: rotate(90deg) scale(1.2);
-    }
+    .btn-clear i { transition: transform 0.3s ease; }
+    .btn-clear:hover i { transform: rotate(90deg) scale(1.2); }
 
     .toast {
       position: fixed;
@@ -260,12 +257,11 @@
       <div class="upload-area" id="upload-area">
         <div class="upload-icon"><i data-lucide="cloud-upload"></i></div>
         <p class="upload-text">
-          Перетащите файл сюда или <span id="browse">выберите файл</span>
+          Перетащите файлы сюда или <span id="browse">выберите файлы</span>
         </p>
-        <input type="file" id="file-input" accept=".txt,.pdf" />
+        <input type="file" id="file-input" accept=".pdf,.txt" multiple />
       </div>
 
-      <!-- ЧЁРНАЯ ПОЛОСА — СКРЫТА ПО УМОЛЧАНИЮ -->
       <div class="info-bar" id="info-bar">
         <div class="file-name">
           <i data-lucide="file"></i>
@@ -277,15 +273,8 @@
       <div id="text-preview" class="preview text-preview hidden"></div>
       <iframe id="pdf-preview" class="preview pdf-preview hidden"></iframe>
 
-      <!-- КНОПКИ: СЛЕВА — ОТПРАВИТЬ, СПРАВА — ОЧИСТИТЬ -->
       <div class="actions hidden" id="actions">
-        <button class="btn btn-send" id="btn-send"  >
-            <script>
-  // Add a click event listener to the "Отправить" button to redirect to process.html
-  document.getElementById("btn-send").addEventListener("click", function() {
-    window.location.href = "process.html";
-  });
-</script>
+        <button class="btn btn-send" id="btn-send">
           <i data-lucide="send"></i> Отправить
         </button>
         <button class="btn btn-clear" id="btn-clear">
@@ -296,6 +285,9 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- PDF-LIB для объединения -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
   <script>
     lucide.createIcons();
@@ -313,73 +305,92 @@
     const fileSizeText = document.getElementById('file-size-text');
     const toast = document.getElementById('toast');
 
-    let isPdf = false;
-    let currentFile = null;
+    let selectedFiles = [];
 
-    uploadArea.addEventListener('click', () => fileInput.click());
-    browse.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
-
+    // Drag & Drop
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
       uploadArea.addEventListener(event, e => { e.preventDefault(); e.stopPropagation(); });
     });
 
     uploadArea.addEventListener('dragenter', () => uploadArea.classList.add('dragover'));
     uploadArea.addEventListener('dragover', () => uploadArea.classList.add('dragover'));
-    uploadText.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
     uploadArea.addEventListener('drop', e => {
       uploadArea.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length) handleFiles(files);
     });
 
+    // Клик по области
+    uploadArea.addEventListener('click', () => fileInput.click());
+    browse.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+
+    // Выбор файлов
     fileInput.addEventListener('change', e => {
-      if (e.target.files[0]) handleFile(e.target.files[0]);
+      const files = Array.from(e.target.files);
+      if (files.length) handleFiles(files);
     });
 
     btnClear.addEventListener('click', resetAll);
-    
-    // Обработчик кнопки "Отправить"
-    btnSend.addEventListener('click', () => {
-      if (!currentFile) {
-        showToast('Сначала загрузите файл');
+
+    btnSend.addEventListener('click', async () => {
+      const pdfFiles = selectedFiles.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      if (pdfFiles.length === 0) {
+        showToast('Загрузите хотя бы один PDF');
         return;
       }
 
-      // Здесь можно добавить логику отправки файла
-      showToast(`Файл "${currentFile.name}" отправлен!`);
-      
-      // Пример: можно сбросить после отправки
-      // setTimeout(resetAll, 1500);
+      try {
+        const mergedPdf = await mergePdfs(pdfFiles);
+        const url = URL.createObjectURL(mergedPdf);
+        localStorage.setItem('mergedPdfUrl', url);
+        window.location.href = 'process.html';
+      } catch (err) {
+        showToast('Ошибка при объединении');
+        console.error(err);
+      }
     });
 
-    function handleFile(file) {
-      resetAll();
-      currentFile = file;
-      const ext = file.name.toLowerCase().split('.').pop();
-      isPdf = ext === 'pdf';
+    async function mergePdfs(pdfFiles) {
+      const { PDFDocument } = PDFLib;
+      const merged = await PDFDocument.create();
 
-      if (!['txt', 'pdf'].includes(ext)) {
+      for (const file of pdfFiles) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const copiedPages = await merged.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach(page => merged.addPage(page));
+      }
+
+      const bytes = await merged.save();
+      return new Blob([bytes], { type: 'application/pdf' });
+    }
+
+    function handleFiles(files) {
+      resetAll();
+      selectedFiles = files;
+
+      const pdfFiles = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      const txtFiles = files.filter(f => f.name.toLowerCase().endsWith('.txt'));
+
+      if (pdfFiles.length === 0 && txtFiles.length === 0) {
         showToast('Поддерживаются только .txt и .pdf');
-        currentFile = null;
         return;
       }
 
-      // Показываем чёрную полосу ТОЛЬКО для PDF
-      if (isPdf) {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        fileNameText.textContent = file.name;
+      // Показать превью первого PDF
+      const firstPdf = pdfFiles[0] || txtFiles[0];
+      if (firstPdf.name.endsWith('.pdf')) {
+        const sizeMB = (firstPdf.size / (1024 * 1024)).toFixed(2);
+        fileNameText.textContent = firstPdf.name;
         fileSizeText.textContent = `${sizeMB} МБ`;
         infoBar.classList.add('visible');
-        lucide.createIcons();
+        readPDFFile(firstPdf);
+      } else {
+        readTextFile(firstPdf);
       }
 
-      setTimeout(() => {
-        if (isPdf) {
-          readPDFFile(file);
-        } else {
-          readTextFile(file);
-        }
-      }, 100);
+      showActions();
     }
 
     function readTextFile(file) {
@@ -387,7 +398,6 @@
       reader.onload = e => {
         textPreview.textContent = e.target.result;
         textPreview.classList.remove('hidden');
-        showActions();
       };
       reader.readAsText(file, 'UTF-8');
     }
@@ -399,7 +409,6 @@
         const url = URL.createObjectURL(blob);
         pdfPreview.src = url;
         pdfPreview.classList.remove('hidden');
-        showActions();
       };
       reader.readAsArrayBuffer(file);
     }
@@ -416,8 +425,11 @@
       actions.classList.add('hidden');
       infoBar.classList.remove('visible');
       fileInput.value = '';
-      currentFile = null;
-      isPdf = false;
+      selectedFiles = [];
+      if (localStorage.getItem('mergedPdfUrl')) {
+        URL.revokeObjectURL(localStorage.getItem('mergedPdfUrl'));
+        localStorage.removeItem('mergedPdfUrl');
+      }
     }
 
     function showToast(message) {
@@ -426,6 +438,7 @@
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
+    // Запретить drag & drop на body
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
       document.body.addEventListener(event, e => { e.preventDefault(); e.stopPropagation(); });
     });
