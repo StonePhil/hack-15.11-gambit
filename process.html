@@ -150,61 +150,81 @@
 
 
   <script>
-    const leftArrow = document.getElementById('left-arrow');
-    const rightArrow = document.getElementById('right-arrow');
-    const imageContainer = document.getElementById('image-container');
-    const currentImage = document.getElementById('current-image');
-    
-    const images = [
-      "https://placehold.co/600x250/png",
-      "https://placehold.co/600x700/png",
-      "https://placehold.co/600x200/png",
-      "https://placehold.co/600x300/png",
-      "https://placehold.co/600/png"
-    ];
-    
-    let currentIndex = 0;
+  const leftArrow = document.getElementById('left-arrow');
+  const rightArrow = document.getElementById('right-arrow');
+  const imageContainer = document.getElementById('image-container');
+  const currentImage = document.getElementById('current-image');
+  
+  let images = [];
+  let currentIndex = 0;
 
-    // Function to update the displayed image and adapt container size
-    const updateImageDisplay = () => {
-      currentImage.src = images[currentIndex];
-      
-      // Set the container size based on the image's natural width and height
-      const img = new Image();
-      img.src = images[currentIndex];
-      img.onload = () => {
-        imageContainer.style.width = `${img.width}px`;
-        imageContainer.style.height = `${img.height}px`;
-      };
-    };
-
-    // Function to scroll images
-    const scrollImages = (direction) => {
-      if (direction === 'left' && currentIndex > 0) {
-        currentIndex--;
-      } else if (direction === 'right' && currentIndex < images.length - 1) {
-        currentIndex++;
-      }
-      
+  // Fetch images from the backend API
+  /*
+  const fetchImages = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/images'); // API endpoint for images
+      const data = await response.json();
+      images = data.images; // Assuming the response contains a list of image URLs
       updateImageDisplay();
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      // Fallback to placeholder images if the fetch fails
+      */
+      images = [
+        "https://placehold.co/600x250/png",
+        "https://placehold.co/600x700/png",
+        "https://placehold.co/600x200/png",
+        "https://placehold.co/600x300/png",
+        "https://placehold.co/600/png"
+      ];
+      /*
+      updateImageDisplay();
+    }
+  };
+*/
+
+  // Update the image display based on the current index
+  const updateImageDisplay = () => {
+    if (images.length === 0) return; // If no images, do nothing
+    currentImage.src = images[currentIndex];
+
+    // Set the container size based on the image's natural width and height
+    const img = new Image();
+    img.src = images[currentIndex];
+    img.onload = () => {
+      imageContainer.style.width = `${img.width}px`;
+      imageContainer.style.height = `${img.height}px`;
     };
+  };
 
-    // Left and Right Arrow Clicks
-    leftArrow.addEventListener('click', () => scrollImages('left'));
-    rightArrow.addEventListener('click', () => scrollImages('right'));
-
-    // Keyboard Arrow Navigation
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') {
-        scrollImages('left');
-      } else if (e.key === 'ArrowRight') {
-        scrollImages('right');
-      }
-    });
-
-    // Initial setup: display the first image
+  // Scroll images based on direction
+  const scrollImages = (direction) => {
+    if (direction === 'left' && currentIndex > 0) {
+      currentIndex--;
+    } else if (direction === 'right' && currentIndex < images.length - 1) {
+      currentIndex++;
+    }
+    
     updateImageDisplay();
-  </script>
+  };
+
+  // Left and Right Arrow Clicks
+  leftArrow.addEventListener('click', () => scrollImages('left'));
+  rightArrow.addEventListener('click', () => scrollImages('right'));
+
+  // Keyboard Arrow Navigation
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+      scrollImages('left');
+    } else if (e.key === 'ArrowRight') {
+      scrollImages('right');
+    }
+  });
+
+  // Initial setup: fetch images when the page loads
+  fetchImages();
+</script>
+
 
 </body>
 </html>
