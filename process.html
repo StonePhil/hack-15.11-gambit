@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Process</title>
+
+  <!-- Google Fonts: Inter + JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Icons: Lucide (lightweight) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    :root {
+      --bg-start: #F8FAFC;
+      --bg-end: #E0E7FF;
+      --accent-purple: #5E60CE;
+      --accent-cyan: #48CAE4;
+      --text: #2D3748;
+      --text-light: #718096;
+      --border: rgba(255, 255, 255, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--text);
+      margin-bottom: 24px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .image-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .image-wrapper {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .arrows {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .arrow {
+      background-color: rgba(0, 0, 0, 0.3);
+      color: white;
+      padding: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .arrow:hover {
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Результаты</h1>
+
+    <div class="image-container" id="image-container">
+      <!-- Placeholder images -->
+      <img src="https://placehold.co/600x333/png" class="image-wrapper" id="current-image" alt="Image 1">
+    </div>
+
+    <div class="arrows">
+      <div class="arrow" id="left-arrow">&#8592;</div>
+      <div class="arrow" id="right-arrow">&#8594;</div>
+    </div>
+  </div>
+
+  <script>
+    const leftArrow = document.getElementById('left-arrow');
+    const rightArrow = document.getElementById('right-arrow');
+    const imageContainer = document.getElementById('image-container');
+    const currentImage = document.getElementById('current-image');
+    
+    const images = [
+      "https://placehold.co/600x250/png",
+      "https://placehold.co/600x700/png",
+      "https://placehold.co/600x200/png",
+      "https://placehold.co/600x300/png",
+      "https://placehold.co/600/png"
+    ];
+    
+    let currentIndex = 0;
+
+    // Function to update the displayed image and adapt container size
+    const updateImageDisplay = () => {
+      currentImage.src = images[currentIndex];
+      
+      // Set the container size based on the image's natural width and height
+      const img = new Image();
+      img.src = images[currentIndex];
+      img.onload = () => {
+        imageContainer.style.width = `${img.width}px`;
+        imageContainer.style.height = `${img.height}px`;
+      };
+    };
+
+    // Function to scroll images
+    const scrollImages = (direction) => {
+      if (direction === 'left' && currentIndex > 0) {
+        currentIndex--;
+      } else if (direction === 'right' && currentIndex < images.length - 1) {
+        currentIndex++;
+      }
+      
+      updateImageDisplay();
+    };
+
+    // Left and Right Arrow Clicks
+    leftArrow.addEventListener('click', () => scrollImages('left'));
+    rightArrow.addEventListener('click', () => scrollImages('right'));
+
+    // Keyboard Arrow Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        scrollImages('left');
+      } else if (e.key === 'ArrowRight') {
+        scrollImages('right');
+      }
+    });
+
+    // Initial setup: display the first image
+    updateImageDisplay();
+  </script>
+
+</body>
+</html>
