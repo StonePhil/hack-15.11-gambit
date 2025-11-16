@@ -1,0 +1,8 @@
+flask
+flask-cors
+pdf2image
+opencv-python
+requests
+qrdet
+pillow
+numpy
