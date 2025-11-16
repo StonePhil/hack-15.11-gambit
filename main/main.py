@@ -8,12 +8,16 @@ import requests
 from pdf2image import convert_from_path
 
 # ---------- CONFIG ----------
+
 PLACEHOLDER_PDF = "placeholder.pdf"
 
 ROBOFLOW_API_KEY = "69h5oA8TM54t3lL1GwQU"
 ROBOFLOW_MODEL_ID = "stamps-signatures-detection-oz2g3/2"
 UPLOAD_DIR = "uploads"
 RESULT_DIR = "results"
+
+# ADD THIS:
+POPPLER_PATH = r"C:\poppler-25.11.0\Library\bin"    # <- REQUIRED for Windows
 
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -85,26 +89,19 @@ def run_both_models(image_path: str, output_path: str):
 app = Flask(__name__)
 
 
-@app.route("/process_pdf", methods=["Get", "POST"])
+@app.route("/process_pdf", methods=["GET", "POST"])
 def process_pdf():
     """Receive PDF -> return processed images + detections."""
-    #if "file" not in request.files:
-    #    return jsonify({"error": "No file uploaded"}), 400
-#
-    #pdf_file = request.files["file"]
-    # Save to disk
-    #file_id = str(uuid.uuid4())
-    #pdf_path = os.path.join(UPLOAD_DIR, f"{file_id}.pdf")
-    
-    #pdf_file.save(pdf_path)
+
     pdf_path = PLACEHOLDER_PDF
     file_id = "placeholder"
-    # Convert PDF to images
-    pages = convert_from_path(pdf_path, dpi=300)
-    page_image_paths = []
+
+    # Convert PDF to images (UPDATED with poppler_path)
     print(f"[INFO] Using placeholder PDF: {pdf_path}")
+    pages = convert_from_path(pdf_path, dpi=300, poppler_path=POPPLER_PATH)
     print(f"[INFO] Pages found: {len(pages)}")
 
+    page_image_paths = []
     detections_output = []
 
     for i, page in enumerate(pages, start=1):
@@ -136,7 +133,6 @@ def process_pdf():
 def get_result_image(filename):
     """Serve processed image."""
     return send_from_directory(RESULT_DIR, filename)
-
 
 
 # ---------- RUN ----------
