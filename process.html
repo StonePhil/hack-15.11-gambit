@@ -88,17 +88,21 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
       margin-bottom: 20px;
+      width: 100%;
+      max-width: 900px;      /* or any max width you like */
+      overflow: visible;     /* don't crop the image */
     }
 
     .image-wrapper {
-      max-width: 100%;
-      max-height: 100%;
+      display: block;
+      width: 100%;           /* scale to container width */
+      height: auto;          /* keep aspect ratio */
       object-fit: contain;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
 
     .arrows {
       position: fixed;
@@ -158,53 +162,37 @@
   let images = [];
   let currentIndex = 0;
 
-  // Fetch images from the backend API
-  /*
-  const fetchImages = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/images'); // API endpoint for images
-      const data = await response.json();
-      images = data.images; // Assuming the response contains a list of image URLs
-      updateImageDisplay();
-    } catch (error) {
-      console.error('Error fetching images:', error);
-      // Fallback to placeholder images if the fetch fails
-      */
+  // Load images from localStorage (saved by index.html)
+  function loadImages() {
+    const stored = localStorage.getItem('resultImages');
+    if (!stored) {
+      console.warn('No resultImages in localStorage, using placeholder');
       images = [
         "https://placehold.co/600x250/png",
-        "https://placehold.co/600x700/png",
-        "https://placehold.co/600x200/png",
-        "https://placehold.co/600x300/png",
-        "https://placehold.co/600/png"
+        "https://placehold.co/600x300/png"
       ];
-      /*
-      updateImageDisplay();
+    } else {
+      images = JSON.parse(stored);
     }
-  };
-*/
+    updateImageDisplay();
+  }
 
   // Update the image display based on the current index
   const updateImageDisplay = () => {
-    if (images.length === 0) return; // If no images, do nothing
-    currentImage.src = images[currentIndex];
+  if (images.length === 0) return;
+  currentImage.src = images[currentIndex];
+};
 
-    // Set the container size based on the image's natural width and height
-    const img = new Image();
-    img.src = images[currentIndex];
-    img.onload = () => {
-      imageContainer.style.width = `${img.width}px`;
-      imageContainer.style.height = `${img.height}px`;
-    };
-  };
 
   // Scroll images based on direction
   const scrollImages = (direction) => {
+    if (images.length === 0) return;
+
     if (direction === 'left' && currentIndex > 0) {
       currentIndex--;
     } else if (direction === 'right' && currentIndex < images.length - 1) {
       currentIndex++;
     }
-    
     updateImageDisplay();
   };
 
@@ -221,9 +209,10 @@
     }
   });
 
-  // Initial setup: fetch images when the page loads
-  fetchImages();
+  // Initial load
+  loadImages();
 </script>
+
 
 
 </body>

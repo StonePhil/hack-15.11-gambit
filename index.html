@@ -321,11 +321,11 @@
     if (files.length) handleFiles(files);
   });
 
-  // Клик по области
+  // Click on area
   uploadArea.addEventListener('click', () => fileInput.click());
   browse.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
 
-  // Выбор файлов
+  // File input
   fileInput.addEventListener('change', e => {
     const files = Array.from(e.target.files);
     if (files.length) handleFiles(files);
@@ -333,36 +333,49 @@
 
   btnClear.addEventListener('click', resetAll);
 
-  // **Updated btn-send code**
+  // SEND BUTTON -> upload PDF to Flask
   btnSend.addEventListener('click', async () => {
     const pdfFiles = selectedFiles.filter(f => f.name.toLowerCase().endsWith('.pdf'));
     if (pdfFiles.length === 0) {
       showToast('Загрузите хотя бы один PDF');
       return;
     }
-/*
-    const formData = new FormData();
-    pdfFiles.forEach(file => formData.append('file', file));
 
-    // Send the file data to the Flask backend (you can change the URL if your server is hosted differently)
+    const pdfFile = pdfFiles[0]; // take only the first PDF
+    const formData = new FormData();
+    formData.append('file', pdfFile);
+
     try {
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch('http://localhost:5005/process_pdf', {
         method: 'POST',
         body: formData
       });
 
       if (!response.ok) {
-        throw new Error('Ошибка при загрузке файла');
+        showToast('Ошибка при обработке файла');
+        console.error('Response status:', response.status);
+        return;
       }
 
-      // On success, redirect to the process.html page
-      
+      const data = await response.json();
+      console.log('Backend response:', data);
+      console.log("IMAGES RECEIVED FROM SERVER:", data.images);
+
+      // Save image URLs in localStorage for process.html
+      if (data.images && data.images.length > 0) {
+        localStorage.setItem('resultImages', JSON.stringify(data.images));
+      } else {
+        showToast('Не удалось получить изображения');
+        return;
+      }
+
+      // Go to results page
+      window.location.href = 'process.html';
+
     } catch (err) {
-      showToast('Ошибка при объединении');
+      showToast('Ошибка при отправке файла');
       console.error(err);
     }
-*/
-    window.location.href = 'process.html';
   });
 
   function handleFiles(files) {
@@ -377,9 +390,8 @@
       return;
     }
 
-    // Показать превью первого PDF
     const firstPdf = pdfFiles[0] || txtFiles[0];
-    if (firstPdf.name.endsWith('.pdf')) {
+    if (firstPdf.name.toLowerCase().endsWith('.pdf')) {
       const sizeMB = (firstPdf.size / (1024 * 1024)).toFixed(2);
       fileNameText.textContent = firstPdf.name;
       fileSizeText.textContent = `${sizeMB} МБ`;
@@ -425,9 +437,8 @@
     infoBar.classList.remove('visible');
     fileInput.value = '';
     selectedFiles = [];
-    if (localStorage.getItem('mergedPdfUrl')) {
-      URL.revokeObjectURL(localStorage.getItem('mergedPdfUrl'));
-      localStorage.removeItem('mergedPdfUrl');
+    if (localStorage.getItem('resultImages')) {
+      localStorage.removeItem('resultImages');
     }
   }
 
@@ -437,11 +448,12 @@
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
 
-  // Запретить drag & drop на body
+  // Block drag & drop on body
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
     document.body.addEventListener(event, e => { e.preventDefault(); e.stopPropagation(); });
   });
 </script>
+
 
 </body>
 </html>
